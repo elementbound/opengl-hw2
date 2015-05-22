@@ -105,7 +105,7 @@ bool app_Scene::gl_init() {
 
 bool app_Scene::load_resources() {
 	std::vector<std::pair<const char*, const char*>> meshesToLoad = {
-		{"room",			"data/meshes/room.obj"},
+		{"item",			"data/meshes/item.obj"},
 		{"table", 			"data/meshes/table.obj"},
 
 		{"whisky", 			"data/meshes/whisky.obj"},
@@ -117,9 +117,9 @@ bool app_Scene::load_resources() {
 	};
 
 	std::vector<std::pair<const char*, const char*>> texturesToLoad = {
-		{"room-diffuse", 		"data/textures/room-diffuse.png"}, 
-		{"room-ao", 			"data/textures/room-ao.png"}, 
-		{"room-specular", 		"data/textures/room-specular.png"}, 
+		{"item-diffuse", 		"data/textures/item-diffuse.png"}, 
+		{"item-ao", 			"data/textures/item-ao.png"}, 
+		{"item-specular", 		"data/textures/item-specular.png"}, 
 
 		{"table-diffuse", 		"data/textures/table-diffuse.png"}, 
 		{"table-ao", 			"data/textures/table-ao.png"}, 
@@ -171,7 +171,77 @@ bool app_Scene::load_resources() {
 }
 
 bool app_Scene::init_scene() {
+	std::cout << "Initializing scene... ";
 
+	//Room
+	{
+		renderable_t item;
+			item.transform.pos   = glm::vec3(0.0f);
+			item.transform.rot   = glm::radians(glm::vec3(0.0f, 0.0f, 180.0f));
+			item.transform.scale = glm::vec3(1.0f);
+
+			item.material.attributes["matDiffuse"] = glm::vec4(1.0f);
+			item.material.attributes["matSpecular"] = glm::vec4(1.0f, 1.0f, 1.0f, 50.0f);
+
+			item.material.diffuseTexture = m_Textures["room-diffuse"];
+			item.material.specularTexture = m_Textures["room-specular"];
+			item.material.aoTexture = m_Textures["room-ao"];
+
+		m_Renderables.insert({renderPhase_Opaque, item});
+	}
+
+	//Armchair
+	{
+		renderable_t item;
+			item.transform.pos   = glm::vec3(0.0f);
+			item.transform.rot   = glm::radians(glm::vec3(0.0f, 0.0f, 180.0f));
+			item.transform.scale = glm::vec3(1.0f);
+
+			item.material.attributes["matDiffuse"] = glm::vec4(1.0f);
+			item.material.attributes["matSpecular"] = glm::vec4(1.0f, 1.0f, 1.0f, 50.0f);
+
+			item.material.diffuseTexture = m_Textures["armchair-diffuse"];
+			item.material.specularTexture = m_Textures["armchair-specular"];
+			item.material.aoTexture = m_Textures["armchair-ao"];
+
+		m_Renderables.insert({renderPhase_Opaque, item});
+	}
+
+	//Table
+	{
+		renderable_t item;
+			item.transform.pos   = glm::vec3(2.88252f, 0.28706f, 2.0f);
+			item.transform.rot   = glm::radians(glm::vec3(0.0f, 0.0f, 196.513f));
+			item.transform.scale = glm::vec3(1.0f / 3.0f);
+
+			item.material.attributes["matDiffuse"] = glm::vec4(1.0f);
+			item.material.attributes["matSpecular"] = glm::vec4(1.0f, 1.0f, 1.0f, 50.0f);
+
+			item.material.diffuseTexture = m_Textures["table-diffuse"];
+			item.material.specularTexture = m_Textures["table-specular"];
+			item.material.aoTexture = m_Textures["table-ao"];
+
+		m_Renderables.insert({renderPhase_Opaque, item});
+	}
+
+	//Projector
+	{
+		renderable_t item;
+			item.transform.pos   = glm::vec3(0.0f, -3.79882f, 5.0f);
+			item.transform.rot   = glm::radians(glm::vec3(0.0f, 0.0f, 180.0f));
+			item.transform.scale = glm::vec3(1.0f / 2.0f);
+
+			item.material.attributes["matDiffuse"] = glm::vec4(1.0f);
+			item.material.attributes["matSpecular"] = glm::vec4(1.0f, 1.0f, 1.0f, 50.0f);
+
+			item.material.diffuseTexture = m_Textures["projector-diffuse"];
+			item.material.specularTexture = m_Textures["projector-specular"];
+			item.material.aoTexture = m_Textures["projector-ao"];
+
+		m_Renderables.insert({renderPhase_Opaque, item});
+	}
+	std::cout << "done\n";
+	return true;
 }
 
 //===========================================================================================//

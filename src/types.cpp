@@ -28,3 +28,7 @@ glm::mat4 transform_t::calculateView() const {
 glm::vec3 transform_t::forward() const {
 	return dirvec(rot.z, rot.x);
 }
+
+bool operator<(const renderable_t& a, const renderable_t& b) {
+	return &a < &b;
+}

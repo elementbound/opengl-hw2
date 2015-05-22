@@ -5,6 +5,8 @@
 #include <map>
 #include <string>
 
+#include "glwrap/texture.h"
+
 struct transform_t {
 	glm::vec3 pos;
 	glm::vec3 rot;
@@ -16,12 +18,20 @@ struct transform_t {
 	glm::vec3 forward() const;
 };
 
-typedef std::map<std::string, glm::vec4> material_t;
+struct material_t {
+	std::map<std::string, glm::vec4> attributes;
+
+	texture2d* diffuseTexture;
+	texture2d* specularTexture;
+	texture2d* aoTexture;
+};
 
 struct renderable_t {
 	transform_t	transform;
 	material_t	material;
 };
+
+bool operator<(const renderable_t& a, const renderable_t& b);
 
 enum renderPhase_t {
 	renderPhase_Opaque, 
