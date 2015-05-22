@@ -192,7 +192,7 @@ bool app_Scene::init_scene() {
 	{
 		renderable_t item;
 			item.transform.pos   = glm::vec3(0.0f);
-			item.transform.rot   = glm::radians(glm::vec3(0.0f, 0.0f, 180.0f));
+			item.transform.rot   = glm::radians(glm::vec3(0.0f, 0.0f, 0.0f));
 			item.transform.scale = glm::vec3(1.0f);
 
 			item.material.attributes["matDiffuse"] = glm::vec4(1.0f);
@@ -357,6 +357,16 @@ void app_Scene::on_refresh()
 	glm::mat4 matWorld;
 	glm::mat4 matMatrix;
 
+	currentShader->set_uniform("uLightPos", m_LightPos);
+	currentShader->set_uniform("uLightColor", m_LightColor);
+	currentShader->set_uniform("uLightRange", 45.0f);
+
+	currentShader->set_uniform("uDiffuseTexture", 0);
+	currentShader->set_uniform("uSpecularTexture", 1);
+	currentShader->set_uniform("uAOTexture", 2);
+
+	currentShader->set_uniform("uViewDir", m_Camera.forward());
+
 	for(const auto& p : m_Renderables) {
 		const renderable_t& r = p.second;
 		matWorld = r.transform.calculateWorld();
@@ -365,10 +375,15 @@ void app_Scene::on_refresh()
 		currentShader->set_uniform("uMVP", m_CameraProjection * matView * matWorld);
 		currentShader->set_uniform("uNormalMatrix", glm::transpose(glm::inverse(matWorld)));
 
-		currentShader->set_uniform("uLightPos", m_LightPos);
-		currentShader->set_uniform("uLightColor", m_LightColor);
-
+		glActiveTexture(GL_TEXTURE0);
 		r.material.diffuseTexture->use();
+
+		glActiveTexture(GL_TEXTURE1);
+		r.material.specularTexture->use();
+
+		glActiveTexture(GL_TEXTURE2);
+		r.material.aoTexture->use();
+
 		r.mesh->bind();
 		r.mesh->draw();
 	}

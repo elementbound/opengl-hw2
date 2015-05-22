@@ -8,24 +8,42 @@ out vec4 outColor;
 
 uniform vec3 uLightPos;
 uniform vec3 uLightColor;
-uniform sampler2D uTexture;
+uniform float uLightRange;
+
+uniform vec3 uViewDir;
+
+uniform sampler2D uDiffuseTexture;
+uniform sampler2D uSpecularTexture;
+uniform sampler2D uAOTexture;
 
 void main()
 {
-	vec3 diffuseColor = texture(uTexture, fragTexcoord).rgb;
+	vec3 diffuseColor = texture(uDiffuseTexture, fragTexcoord).rgb;
+	vec3 specularColor = texture(uSpecularTexture, fragTexcoord).rgb;
+	vec3 aoColor = texture(uAOTexture, fragTexcoord).rgb;
 
 	//
 
 	vec3 normal = normalize(fragNormal);
 	vec3 delta = uLightPos - fragPosition;
-	float dst = length(delta);
-	delta /= dst;
 
-	float lightF = max(dot(normal, delta), 0.0f) * (30.0f / pow(1.0f + dst, 2.0));
+	//
+
+	float dst = length(delta);
+	vec3 delta_dir = delta/dst;
+
+	float lightF = max(dot(normal, delta_dir), 0.0f) * (uLightRange / pow(1.0f + dst, 2.0));
 
 	vec3 diffuseContrib = uLightColor * lightF;
 
 	//
 
-	outColor = vec4(diffuseColor * diffuseContrib, 1.0);
+	vec3 halfVec = normalize(uViewDir + delta_dir);
+	lightF = max(dot(halfVec, normal), 0.0);
+	lightF = pow(lightF, 50.0f);
+	vec3 specularContrib = uLightColor * lightF;
+
+	//
+
+	outColor = vec4(diffuseColor*diffuseContrib*aoColor + specularColor*specularContrib, 1.0);
 }
