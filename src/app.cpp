@@ -106,6 +106,7 @@ bool app_Scene::glew_init() {
 bool app_Scene::gl_init() {
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
+	glEnable(GL_BLEND);
 
 	return 1;
 }
@@ -142,8 +143,9 @@ bool app_Scene::load_resources() {
 	};
 
 	std::vector<std::tuple<const char*, const char*, const char*>> shadersToLoad = {
-		std::make_tuple("textured", "data/shaders/textured.vs", "data/shaders/textured.fs"),
-		std::make_tuple("opaque",	"data/shaders/opaque.vs", 	"data/shaders/opaque.fs")
+		std::make_tuple("textured", "data/shaders/textured.vs", "data/shaders/textured.fs"), 
+		std::make_tuple("opaque",	"data/shaders/opaque.vs", 	"data/shaders/opaque.fs"), 
+		std::make_tuple("project", "data/shaders/project.vs", "data/shaders/project.fs")
 	};
 
 	std::cout << "Loading shaders... \n";
@@ -264,6 +266,7 @@ bool app_Scene::init_scene() {
 
 			item.mesh = m_Meshes["projector"];
 
+		m_Projector = item;
 		m_Renderables.insert({renderPhase_Opaque, item});
 	}
 
@@ -403,16 +406,17 @@ void app_Scene::on_refresh()
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+	//Render opaque
+	//glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	shader_program* currentShader = m_Shaders["opaque"];
 	currentShader->use();
 
 	glm::mat4 matView = m_Camera.calculateView();
 	glm::mat4 matWorld;
-	glm::mat4 matMatrix;
 
 	currentShader->set_uniform("uLightPos", m_LightPos);
 	currentShader->set_uniform("uLightColor", m_LightColor);
-	currentShader->set_uniform("uLightRange", 45.0f);
+	currentShader->set_uniform("uLightRange", 30.0f);
 
 	currentShader->set_uniform("uDiffuseTexture", 0);
 	currentShader->set_uniform("uSpecularTexture", 1);
@@ -421,6 +425,9 @@ void app_Scene::on_refresh()
 	currentShader->set_uniform("uViewDir", m_Camera.forward());
 
 	for(const auto& p : m_Renderables) {
+		if(p.first != renderPhase_Opaque)
+			continue;
+
 		const renderable_t& r = p.second;
 		matWorld = r.transform.calculateWorld();
 
@@ -440,6 +447,32 @@ void app_Scene::on_refresh()
 		r.mesh->bind();
 		r.mesh->draw();
 	}
+
+	//Render projected
+	/*glm::mat4 matImageView = m_Projector.transform.calculateView();
+	glm::mat4 matImageProj = glm::perspective(glm::radians(30.0f), 1.0f, 0.2f, 1000.0f);
+	glm::mat4 matImageST = glm::translate(glm::mat4(), glm::vec3(0.5f)) * glm::scale(glm::mat4(), glm::vec3(0.5f));
+	glm::mat4 matImage = matImageST * matImageProj * matImageView;
+
+	//glBlendFunc(GL_ONE, GL_ONE); //Add colors
+	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+
+	glm::mat4 matView = m_Camera.calculateView();
+	glm::mat4 matWorld;
+
+	shader_program* currentShader = m_Shaders["project"];
+	currentShader->use();
+	for(const auto& p : m_Renderables) {
+		const renderable_t& r = p.second;
+		matWorld = r.transform.calculateWorld();
+
+		currentShader->set_uniform("uWorldMatrix", matWorld);
+		currentShader->set_uniform("uMVP", m_CameraProjection * matView * matWorld);
+		currentShader->set_uniform("uMatImage", matImage);
+
+		r.mesh->bind();
+		r.mesh->draw();
+	}*/
 
 	glfwSwapBuffers(this->handle());
 }

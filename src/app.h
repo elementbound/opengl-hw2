@@ -37,6 +37,8 @@ class app_Scene : public resizable_window {
 		glm::vec2	m_CameraGrabAt;
 		glm::vec2	m_Mouse;
 
+		renderable_t m_Projector;
+
 		//
 
 		bool load_mesh(const char* name, const char* file);

@@ -32,7 +32,8 @@ void main()
 	float dst = length(delta);
 	vec3 delta_dir = delta/dst;
 
-	float lightF = max(dot(normal, delta_dir), 0.0f) * (uLightRange / pow(1.0f + dst, 2.0));
+	float lightF = pow(uLightRange, 2.0) / (pow(uLightRange, 2.0) + pow(dst, 2.0));
+	lightF *= max(dot(normal, delta_dir), 0.0f);
 
 	vec3 diffuseContrib = uLightColor * lightF;
 
