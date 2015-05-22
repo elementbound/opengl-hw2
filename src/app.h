@@ -29,6 +29,9 @@ class app_Scene : public resizable_window {
 		glm::mat4	m_CameraProjection;
 		float		m_CameraFOV = glm::radians(60.0f);
 
+		glm::vec3 	m_LightPos;
+		glm::vec3	m_LightColor;
+
 		//
 
 		bool load_mesh(const char* name, const char* file);

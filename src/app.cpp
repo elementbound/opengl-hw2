@@ -139,7 +139,8 @@ bool app_Scene::load_resources() {
 	};
 
 	std::vector<std::tuple<const char*, const char*, const char*>> shadersToLoad = {
-		std::make_tuple("textured", "data/shaders/textured.vs", "data/shaders/textured.fs")
+		std::make_tuple("textured", "data/shaders/textured.vs", "data/shaders/textured.fs"),
+		std::make_tuple("opaque",	"data/shaders/opaque.vs", 	"data/shaders/opaque.fs")
 	};
 
 	std::cout << "Loading shaders... \n";
@@ -209,7 +210,7 @@ bool app_Scene::init_scene() {
 	//Armchair
 	{
 		renderable_t item;
-			item.transform.pos   = glm::vec3(0.0f);
+			item.transform.pos   = glm::vec3(0.0f, 0.0f, 1.0f);
 			item.transform.rot   = glm::radians(glm::vec3(0.0f, 0.0f, 180.0f));
 			item.transform.scale = glm::vec3(1.0f);
 
@@ -263,6 +264,13 @@ bool app_Scene::init_scene() {
 		m_Renderables.insert({renderPhase_Opaque, item});
 	}
 
+	//Light
+	{
+		m_LightPos = glm::vec3(0.0f, 6.0f, 5.0f);
+		m_LightColor = glm::vec3(1.0f);
+	}
+
+	//Camera
 	{
 		m_Camera.pos = glm::vec3(-2.12785f, 9.71749f, 11.49396f);
 		m_Camera.rot = glm::radians(glm::vec3(50.134f, 0.0f, 193.717f));
@@ -342,17 +350,24 @@ void app_Scene::on_refresh()
 	//update();
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	shader_program* currentShader = m_Shaders["textured"];
+	shader_program* currentShader = m_Shaders["opaque"];
 	currentShader->use();
 
 	glm::mat4 matView = m_Camera.calculateView();
 	glm::mat4 matWorld;
+	glm::mat4 matMatrix;
 
 	for(const auto& p : m_Renderables) {
 		const renderable_t& r = p.second;
 		matWorld = r.transform.calculateWorld();
 
+		currentShader->set_uniform("uWorldMatrix", matWorld);
 		currentShader->set_uniform("uMVP", m_CameraProjection * matView * matWorld);
+		currentShader->set_uniform("uNormalMatrix", glm::transpose(glm::inverse(matWorld)));
+
+		currentShader->set_uniform("uLightPos", m_LightPos);
+		currentShader->set_uniform("uLightColor", m_LightColor);
+
 		r.material.diffuseTexture->use();
 		r.mesh->bind();
 		r.mesh->draw();
