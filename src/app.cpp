@@ -105,7 +105,7 @@ bool app_Scene::gl_init() {
 
 bool app_Scene::load_resources() {
 	std::vector<std::pair<const char*, const char*>> meshesToLoad = {
-		{"item",			"data/meshes/item.obj"},
+		{"room",			"data/meshes/room.obj"},
 		{"table", 			"data/meshes/table.obj"},
 
 		{"whisky", 			"data/meshes/whisky.obj"},
@@ -117,9 +117,9 @@ bool app_Scene::load_resources() {
 	};
 
 	std::vector<std::pair<const char*, const char*>> texturesToLoad = {
-		{"item-diffuse", 		"data/textures/item-diffuse.png"}, 
-		{"item-ao", 			"data/textures/item-ao.png"}, 
-		{"item-specular", 		"data/textures/item-specular.png"}, 
+		{"room-diffuse", 		"data/textures/room-diffuse.png"}, 
+		{"room-ao", 			"data/textures/room-ao.png"}, 
+		{"room-specular", 		"data/textures/room-specular.png"}, 
 
 		{"table-diffuse", 		"data/textures/table-diffuse.png"}, 
 		{"table-ao", 			"data/textures/table-ao.png"}, 
@@ -135,11 +135,21 @@ bool app_Scene::load_resources() {
 	};
 
 	std::vector<std::tuple<const char*, const char*, const char*>> shadersToLoad = {
-		//
+		std::make_tuple("textured", "data/shaders/textured.vs", "data/shaders/textured.fs")
 	};
 
 	std::cout << "Loading shaders... \n";
-	//TODO
+	for(std::tuple<const char*, const char*, const char*> t : shadersToLoad) {
+		std::cout << "\t" << std::get<0>(t) << " <- " << std::get<1>(t) << ", " << std::get<2>(t) << "... ";
+
+		if(!load_shader(std::get<0>(t),std::get<1>(t),std::get<2>(t))) {
+			std::cout << "fail!\n";
+			return false;
+		}
+
+		std::cout << "success\n";
+	}
+	std::cout << std::endl;
 
 	std::cout << "Loading meshes... \n";
 	for(std::pair<const char*, const char*> p : meshesToLoad) {
@@ -187,6 +197,8 @@ bool app_Scene::init_scene() {
 			item.material.specularTexture = m_Textures["room-specular"];
 			item.material.aoTexture = m_Textures["room-ao"];
 
+			item.mesh = m_Meshes["room"];
+
 		m_Renderables.insert({renderPhase_Opaque, item});
 	}
 
@@ -203,6 +215,8 @@ bool app_Scene::init_scene() {
 			item.material.diffuseTexture = m_Textures["armchair-diffuse"];
 			item.material.specularTexture = m_Textures["armchair-specular"];
 			item.material.aoTexture = m_Textures["armchair-ao"];
+
+			item.mesh = m_Meshes["armchair"];
 
 		m_Renderables.insert({renderPhase_Opaque, item});
 	}
@@ -221,6 +235,8 @@ bool app_Scene::init_scene() {
 			item.material.specularTexture = m_Textures["table-specular"];
 			item.material.aoTexture = m_Textures["table-ao"];
 
+			item.mesh = m_Meshes["table"];
+
 		m_Renderables.insert({renderPhase_Opaque, item});
 	}
 
@@ -238,7 +254,15 @@ bool app_Scene::init_scene() {
 			item.material.specularTexture = m_Textures["projector-specular"];
 			item.material.aoTexture = m_Textures["projector-ao"];
 
+			item.mesh = m_Meshes["projector"];
+
 		m_Renderables.insert({renderPhase_Opaque, item});
+	}
+
+	{
+		m_Camera.pos = glm::vec3(-2.12785f, 9.71749f, 11.49396f);
+		m_Camera.rot = glm::radians(glm::vec3(50.134f, 0.0f, 193.717f));
+		m_Camera.scale = glm::vec3(1.0f);
 	}
 	std::cout << "done\n";
 	return true;
@@ -312,6 +336,23 @@ void app_Scene::on_key(int key, int scancode, int action, int mods)
 void app_Scene::on_refresh()
 {
 	//update();
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	shader_program* currentShader = m_Shaders["textured"];
+	currentShader->use();
+
+	glm::mat4 matView = m_Camera.calculateView();
+	glm::mat4 matWorld;
+
+	for(const auto& p : m_Renderables) {
+		const renderable_t& r = p.second;
+		matWorld = r.transform.calculateWorld();
+
+		currentShader->set_uniform("uMVP", m_CameraProjection * matView * matWorld);
+		r.material.diffuseTexture->use();
+		r.mesh->bind();
+		r.mesh->draw();
+	}
 
 	glfwSwapBuffers(this->handle());
 }

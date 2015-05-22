@@ -1,3 +1,4 @@
 *.blend1
+*.exe
 build/*
 glew32.dll

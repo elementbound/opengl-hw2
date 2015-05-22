@@ -6,6 +6,7 @@
 #include <string>
 
 #include "glwrap/texture.h"
+#include "glwrap/mesh.h"
 
 struct transform_t {
 	glm::vec3 pos;
@@ -29,6 +30,8 @@ struct material_t {
 struct renderable_t {
 	transform_t	transform;
 	material_t	material;
+
+	separated_mesh* mesh;
 };
 
 bool operator<(const renderable_t& a, const renderable_t& b);
