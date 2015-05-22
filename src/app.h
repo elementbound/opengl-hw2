@@ -44,6 +44,8 @@ class app_Scene : public resizable_window {
 
 		void update();
 
+		void free_resources();
+
 	protected: 
 		void on_open();
 		void on_resize(int w, int h);
