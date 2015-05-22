@@ -1,5 +1,8 @@
 #include "app.h"
 
+#include <GLFW/glfw3.h>
+#include <glm/gtc/matrix_transform.hpp>
+
 #include "glwrap/util.h"
 #include "glwrap/meshutil.h"
 #include "glwrap/texture_util.h"
@@ -31,7 +34,7 @@ bool app_Scene::load_mesh(const char* name, const char* file) {
 	if(!file_exists(file))
 		return false;
 
-	separated_mesh* resultMesh = new resultMesh;
+	separated_mesh* resultMesh = new separated_mesh;
 	meshutil::load_obj(file, *resultMesh);
 	m_Meshes.insert({name, resultMesh});
 
@@ -56,20 +59,20 @@ bool app_Scene::load_shader(const char* name, const char* vertFile, const char* 
 	shader_program* resultShader = new shader_program;
 	resultShader->create();
 
-	if(!resultShader.attach(read_file(vertFile).c_str(), shader_program::shader_type::vertex)) {
+	if(!resultShader->attach(read_file(vertFile).c_str(), shader_program::shader_type::vertex)) {
 		delete resultShader;
 		return false;
 	}
 
-	if(!resultShader.attach(read_file(fragFile).c_str(), shader_program::shader_type::fragment)) {
+	if(!resultShader->attach(read_file(fragFile).c_str(), shader_program::shader_type::fragment)) {
 		delete resultShader;
 		return false;
 	}
 
-	glBindFragDataLocation(resultShader.handle(), 0, "outColor");
+	glBindFragDataLocation(resultShader->handle(), 0, "outColor");
 	resultShader->link();
 
-	m_Shader.insert({name, resultShader});
+	m_Shaders.insert({name, resultShader});
 	return true;
 }
 
@@ -85,9 +88,9 @@ bool app_Scene::glew_init() {
 		return 0;
 	}
 
-	if(!GLEW_VERSION_4_4)
+	if(!GLEW_VERSION_3_3)
 	{
-		std::cerr << "OpenGL 4.4 not supported" << std::endl;
+		std::cerr << "OpenGL 3.3 not supported" << std::endl;
 		return 0; 
 	}
 	
@@ -163,6 +166,8 @@ bool app_Scene::load_resources() {
 		std::cout << "success\n";
 	}
 	std::cout << std::endl;
+
+	return true;
 }
 
 bool app_Scene::init_scene() {
@@ -223,7 +228,7 @@ void app_Scene::on_open()
 void app_Scene::on_resize(int w, int h)
 {
 	resizable_window::on_resize(w,h);
-	m_CameraProjection = glm::perspective(camera_FOV, (float)m_WindowAspect, 0.0625f, 8192.0f);
+	m_CameraProjection = glm::perspective(m_CameraFOV, (float)m_WindowAspect, 0.0625f, 8192.0f);
 }
 
 
@@ -234,13 +239,53 @@ void app_Scene::on_key(int key, int scancode, int action, int mods)
 	}
 }
 
-void app_CatchIt::on_refresh()
+void app_Scene::on_refresh()
 {
 	//update();
 
 	glfwSwapBuffers(this->handle());
 }
 
-void app_CatchIt::on_close() {
+void app_Scene::on_close() {
 	free_resources();
+}
+
+//===========================================================================================//
+//Runner code
+
+void error_callback(int error, const char* error_str)
+{
+	std::cerr << "[" << error << "]" << error_str << std::endl;
+}
+
+int main() 
+{
+	glfwSetErrorCallback(error_callback);
+	if(!glfwInit())
+		return 1;
+		
+	app_Scene wnd;
+	
+	glewExperimental = GL_TRUE;
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+	
+	glfwWindowHint(GLFW_SAMPLES, 4);
+	
+	wnd.open(640,360, "scene");
+	if(!wnd)
+		return 3;
+	
+	wnd.make_current();
+	
+	std::cout << "Init done, starting loop" << std::endl;
+	
+	while(!glfwWindowShouldClose(wnd.handle()))
+	{
+		wnd.refresh();
+		glfwPollEvents();
+	}
+	
+	return 0;
 }

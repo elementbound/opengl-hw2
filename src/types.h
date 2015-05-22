@@ -23,10 +23,10 @@ struct renderable_t {
 	material_t	material;
 };
 
-enum {
+enum renderPhase_t {
 	renderPhase_Opaque, 
 	renderPhase_Liquid, 
 	renderPhase_Transparent
-} renderPhase_t;
+};
 
 #endif

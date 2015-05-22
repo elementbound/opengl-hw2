@@ -19,7 +19,7 @@
 class app_Scene : public resizable_window {
 	private: 
 		//Resources
-		std::map<std::string, separate_mesh*> 	m_Meshes;
+		std::map<std::string, separated_mesh*> 	m_Meshes;
 		std::map<std::string, texture2d*> 		m_Textures;
 		std::map<std::string, shader_program*> 	m_Shaders;
 
