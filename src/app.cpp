@@ -11,6 +11,11 @@
 #include <tuple>
 #include <vector>
 
+#include <cstdlib> //std::exit
+
+#define dieret(msg, val) {std::cerr << msg << std::endl; return val;}
+#define die(msg) {std::cerr << msg << std::endl; std::exit(1);}
+
 //Not strictly for existence, more like for accessibility
 //Which I basically need this for, so move on... 
 bool file_exists(const char* fname)
@@ -162,4 +167,80 @@ bool app_Scene::load_resources() {
 
 bool app_Scene::init_scene() {
 
+}
+
+//===========================================================================================//
+//Shutdown funcs
+
+void app_Scene::free_resources() {
+	std::cout << "Freeing shaders... \n";
+	for(auto& p : m_Shaders) {
+		std::cout << "\t" << p.first << "\n";
+		delete p.second;
+	}
+	std::cout << std::endl;
+
+	std::cout << "Freeing meshes... \n";
+	for(auto& p : m_Meshes) {
+		std::cout << "\t" << p.first << "\n";
+		delete p.second;
+	}
+	std::cout << std::endl;
+
+	std::cout << "Freeing textures... \n";
+	for(auto& p : m_Textures) {
+		std::cout << "\t" << p.first << "\n";
+		delete p.second;
+	}
+	std::cout << std::endl;
+}
+
+//===========================================================================================//
+//App events
+
+void app_Scene::on_open()
+{
+	if(!glew_init())
+		die("GLEW init fail");
+	
+	if(!gl_init())
+		die("GL init fail");
+	
+	if(!load_resources())
+		die("Couldn't load resources");
+
+	if(!init_scene())
+		die("Couldn't init scene");
+	
+	//Initial resize ( window init kinda )
+	{
+		int w, h;
+		glfwGetWindowSize(this->handle(), &w, &h);
+		this->on_resize(w,h);
+	}
+}
+
+void app_Scene::on_resize(int w, int h)
+{
+	resizable_window::on_resize(w,h);
+	m_CameraProjection = glm::perspective(camera_FOV, (float)m_WindowAspect, 0.0625f, 8192.0f);
+}
+
+
+void app_Scene::on_key(int key, int scancode, int action, int mods)
+{
+	if(key == GLFW_KEY_ESCAPE) {
+		glfwSetWindowShouldClose(this->handle(), 1);
+	}
+}
+
+void app_CatchIt::on_refresh()
+{
+	//update();
+
+	glfwSwapBuffers(this->handle());
+}
+
+void app_CatchIt::on_close() {
+	free_resources();
 }

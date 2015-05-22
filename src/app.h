@@ -52,6 +52,8 @@ class app_Scene : public resizable_window {
 		void on_refresh();
 		
 		void on_key(int key, int scancode, int action, int mods);
+
+		void on_close();
 };
 
 #endif
