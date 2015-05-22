@@ -17,6 +17,7 @@ struct transform_t {
 	glm::mat4 calculateView() const;
 
 	glm::vec3 forward() const;
+	glm::vec3 right() const;
 };
 
 struct material_t {

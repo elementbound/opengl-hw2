@@ -28,9 +28,14 @@ class app_Scene : public resizable_window {
 		transform_t m_Camera;
 		glm::mat4	m_CameraProjection;
 		float		m_CameraFOV = glm::radians(60.0f);
+		float		m_CameraSpeed = 4.0f;
+		bool		m_CameraControl = false;
 
 		glm::vec3 	m_LightPos;
 		glm::vec3	m_LightColor;
+
+		glm::vec2	m_CameraGrabAt;
+		glm::vec2	m_Mouse;
 
 		//
 
@@ -55,6 +60,7 @@ class app_Scene : public resizable_window {
 		void on_refresh();
 		
 		void on_key(int key, int scancode, int action, int mods);
+		void on_mousepos(double x, double y);
 
 		void on_close();
 };

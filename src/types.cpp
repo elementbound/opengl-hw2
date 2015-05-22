@@ -22,11 +22,15 @@ glm::mat4 transform_t::calculateWorld() const {
 }
 
 glm::mat4 transform_t::calculateView() const {
-	return glm::lookAt(pos, forward(), glm::vec3(0.0, 0.0, 1.0));
+	return glm::lookAt(pos, pos + this->forward(), glm::vec3(0.0, 0.0, 1.0));
 }
 
 glm::vec3 transform_t::forward() const {
 	return dirvec(rot.z, rot.x);
+}
+
+glm::vec3 transform_t::right() const {
+	return dirvec(rot.z + glm::radians(90.0f), 0.0f);
 }
 
 bool operator<(const renderable_t& a, const renderable_t& b) {

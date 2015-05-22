@@ -2,6 +2,8 @@
 
 #include <GLFW/glfw3.h>
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/constants.hpp>
+#include <glm/gtx/io.hpp>
 
 #include "glwrap/util.h"
 #include "glwrap/meshutil.h"
@@ -15,6 +17,7 @@
 #include <vector>
 
 #include <cstdlib> //std::exit
+#include <cmath>
 
 #define dieret(msg, val) {std::cerr << msg << std::endl; return val;}
 #define die(msg) {std::cerr << msg << std::endl; std::exit(1);}
@@ -229,9 +232,9 @@ bool app_Scene::init_scene() {
 	//Table
 	{
 		renderable_t item;
-			item.transform.pos   = glm::vec3(2.88252f, 0.28706f, 2.0f);
-			item.transform.rot   = glm::radians(glm::vec3(0.0f, 0.0f, 196.513f));
-			item.transform.scale = glm::vec3(1.0f / 3.0f);
+			item.transform.pos   = glm::vec3(0.0f);
+			item.transform.rot   = glm::radians(glm::vec3(0.0f));
+			item.transform.scale = glm::vec3(1.0f);
 
 			item.material.attributes["matDiffuse"] = glm::vec4(1.0f);
 			item.material.attributes["matSpecular"] = glm::vec4(1.0f, 1.0f, 1.0f, 50.0f);
@@ -273,7 +276,7 @@ bool app_Scene::init_scene() {
 	//Camera
 	{
 		m_Camera.pos = glm::vec3(-2.12785f, 9.71749f, 11.49396f);
-		m_Camera.rot = glm::radians(glm::vec3(50.134f, 0.0f, 193.717f));
+		m_Camera.rot = glm::radians(glm::vec3(-50.134f, 0.0f, 90.0f));
 		m_Camera.scale = glm::vec3(1.0f);
 	}
 	std::cout << "done\n";
@@ -343,11 +346,61 @@ void app_Scene::on_key(int key, int scancode, int action, int mods)
 	if(key == GLFW_KEY_ESCAPE) {
 		glfwSetWindowShouldClose(this->handle(), 1);
 	}
+
+	if(key == GLFW_KEY_SPACE && action == GLFW_PRESS) 
+	{
+		m_CameraControl = !m_CameraControl;
+
+		if(m_CameraControl) {
+			glfwSetInputMode(this->handle(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+			m_CameraGrabAt = m_Mouse;
+		} 
+		else {
+			glfwSetInputMode(this->handle(), GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+		}
+	}
+}
+
+void app_Scene::on_mousepos(double x, double y) {
+	m_Mouse = glm::vec2(x,y);
+
+	if(m_CameraControl)
+	{
+		glm::vec2 delta = m_CameraGrabAt - m_Mouse;
+		m_Camera.rot.x = glm::clamp(m_Camera.rot.x + delta.y / 64.0f, -glm::radians(89.0f), glm::radians(89.0f));
+		m_Camera.rot.z = std::fmod(m_Camera.rot.z - delta.x / 64.0f, glm::two_pi<float>());
+		
+		m_CameraGrabAt = m_Mouse;
+	}
+}
+
+void app_Scene::update() {
+	static double lastCheck = glfwGetTime();
+
+	double frameTime = glfwGetTime() - lastCheck;
+	lastCheck += frameTime;
+
+	if(m_CameraControl) {
+		float speed = frameTime * m_CameraSpeed * (glfwGetKey(this->handle(), GLFW_KEY_LEFT_SHIFT) ? 2.0f : 1.0f);
+
+		if(glfwGetKey(this->handle(), GLFW_KEY_W))
+			m_Camera.pos += speed * m_Camera.forward();
+
+		if(glfwGetKey(this->handle(), GLFW_KEY_S))
+			m_Camera.pos -= speed * m_Camera.forward();
+
+		if(glfwGetKey(this->handle(), GLFW_KEY_D))
+			m_Camera.pos += speed * m_Camera.right();
+
+		if(glfwGetKey(this->handle(), GLFW_KEY_A))
+			m_Camera.pos -= speed * m_Camera.right();
+	}
 }
 
 void app_Scene::on_refresh()
 {
-	//update();
+	update();
+
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	shader_program* currentShader = m_Shaders["opaque"];
