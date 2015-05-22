@@ -46,7 +46,10 @@ bool app_Scene::load_texture(const char* name, const char* file) {
 		return false;
 
 	texture2d* resultTexture = new texture2d;
-	resultTexture->upload(texutil::load_png(file), GL_RGBA);
+	resultTexture->upload(texutil::load_png(file), GL_RGB);
+	resultTexture->parameter(GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR); 
+	resultTexture->parameter(GL_TEXTURE_MAG_FILTER, GL_LINEAR_MIPMAP_LINEAR); 
+	resultTexture->generate_mipmaps();
 	m_Textures.insert({name, resultTexture});
 
 	return true;
@@ -99,7 +102,8 @@ bool app_Scene::glew_init() {
 
 bool app_Scene::gl_init() {
 	glEnable(GL_DEPTH_TEST);
-	
+	glEnable(GL_CULL_FACE);
+
 	return 1;
 }
 
