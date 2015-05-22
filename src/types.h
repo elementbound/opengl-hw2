@@ -12,6 +12,8 @@ struct transform_t {
 
 	glm::mat4 calculateWorld() const;
 	glm::mat4 calculateView() const;
+
+	glm::vec3 forward() const;
 };
 
 typedef std::map<std::string, glm::vec4> material_t;
