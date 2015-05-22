@@ -1,0 +1,3 @@
+[submodule "src/glwrap"]
+	path = src/glwrap
+	url = https://github.com/elementbound/glwrap.git
