@@ -422,7 +422,7 @@ void app_Scene::on_refresh()
 	currentShader->set_uniform("uSpecularTexture", 1);
 	currentShader->set_uniform("uAOTexture", 2);
 
-	currentShader->set_uniform("uViewDir", m_Camera.forward());
+	currentShader->set_uniform("uViewPos", m_Camera.pos);
 
 	for(const auto& p : m_Renderables) {
 		if(p.first != renderPhase_Opaque)

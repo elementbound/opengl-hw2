@@ -10,7 +10,7 @@ uniform vec3 uLightPos;
 uniform vec3 uLightColor;
 uniform float uLightRange;
 
-uniform vec3 uViewDir;
+uniform vec3 uViewPos;
 
 uniform sampler2D uDiffuseTexture;
 uniform sampler2D uSpecularTexture;
@@ -39,7 +39,7 @@ void main()
 
 	//
 
-	vec3 halfVec = normalize(uViewDir + delta_dir);
+	vec3 halfVec = normalize((uViewPos - fragPosition) + delta_dir);
 	lightF = max(dot(halfVec, normal), 0.0);
 	lightF = pow(lightF, 50.0f);
 	vec3 specularContrib = uLightColor * lightF;
