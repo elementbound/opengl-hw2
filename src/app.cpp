@@ -414,9 +414,10 @@ void app_Scene::on_refresh()
 	update();
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glDepthFunc(GL_LESS);
 
 	//Render opaque
-	//glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	shader_program* currentShader = m_Shaders["opaque"];
 	currentShader->use();
 
@@ -458,18 +459,17 @@ void app_Scene::on_refresh()
 	}
 
 	//Render projected
-	/*glm::mat4 matImageView = m_Projector.transform.calculateView();
-	glm::mat4 matImageProj = glm::perspective(glm::radians(30.0f), 1.0f, 0.2f, 1000.0f);
-	glm::mat4 matImageST = glm::translate(glm::mat4(), glm::vec3(0.5f)) * glm::scale(glm::mat4(), glm::vec3(0.5f));
-	glm::mat4 matImage = matImageST * matImageProj * matImageView;
+	glm::mat4 matImageView =  m_Projector.transform.calculateView();
+		matImageView = glm::rotate(matImageView, glm::radians(360.0f * (float)fmod(glfwGetTime()/8.0f, 8.0f)), glm::vec3(0.0f, 0.0f, 1.0f));
+	glm::mat4 matImageProj = glm::perspective(glm::radians(90.0f), 16.0f/9.0f, 0.2f, 1000.0f);
+	glm::mat4 matImage = matImageProj * matImageView;
 
-	//glBlendFunc(GL_ONE, GL_ONE); //Add colors
-	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+	glBlendFunc(GL_ONE, GL_ONE); //Add colors
+	//glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+	//glClear(GL_DEPTH_BUFFER_BIT);
+	glDepthFunc(GL_EQUAL);
 
-	glm::mat4 matView = m_Camera.calculateView();
-	glm::mat4 matWorld;
-
-	shader_program* currentShader = m_Shaders["project"];
+	currentShader = m_Shaders["project"];
 	currentShader->use();
 	for(const auto& p : m_Renderables) {
 		const renderable_t& r = p.second;
@@ -481,7 +481,7 @@ void app_Scene::on_refresh()
 
 		r.mesh->bind();
 		r.mesh->draw();
-	}*/
+	}
 
 	glfwSwapBuffers(this->handle());
 }
