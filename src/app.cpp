@@ -378,6 +378,8 @@ void app_Scene::on_mousepos(double x, double y) {
 }
 
 void app_Scene::update() {
+	static double lastFrameCountStart = glfwGetTime();
+	static unsigned frameCount = 0;
 	static double lastCheck = glfwGetTime();
 
 	double frameTime = glfwGetTime() - lastCheck;
@@ -397,6 +399,13 @@ void app_Scene::update() {
 
 		if(glfwGetKey(this->handle(), GLFW_KEY_A))
 			m_Camera.pos -= speed * m_Camera.right();
+	}
+	
+	frameCount++;
+	if(glfwGetTime() - lastFrameCountStart >= 1.0) {
+		std::cout << "FPS: " << frameCount << '\r';
+		frameCount = 0;
+		lastFrameCountStart = glfwGetTime();
 	}
 }
 
