@@ -203,21 +203,29 @@ bool app_Scene::load_resources() {
 			glBindTexture(GL_TEXTURE_2D, textureHandle);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, m_DepthMapSize.x, m_DepthMapSize.y, 0, GL_RED, GL_FLOAT, NULL);
+
+		    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+		    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+
+		    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
+		    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LESS);
+
+			//glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, m_DepthMapSize.x, m_DepthMapSize.y, 0, GL_RED, GL_FLOAT, NULL);
+			glTexStorage2D(GL_TEXTURE_2D, 1, GL_DEPTH_COMPONENT24, m_DepthMapSize.x, m_DepthMapSize.y);
 		std::cout << "done\n";
 
-		std::cout << "\tCreating RBO... ";
+		/*std::cout << "\tCreating RBO... ";
 			GLuint rboHandle;
 			glGenRenderbuffers(1, &rboHandle);
 			glBindRenderbuffer(GL_RENDERBUFFER, rboHandle);
 			glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, m_DepthMapSize.x, m_DepthMapSize.y);
-		std::cout << "done\n";
+		std::cout << "done\n";*/
 		
-		m_ProjectorDepthMap.attach_texture(GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textureHandle, 0, true);
-		m_ProjectorDepthMap.attach_rbo(GL_DEPTH_ATTACHMENT, rboHandle, true);
+		m_ProjectorDepthMap.attach_texture(GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, textureHandle, 0, true);
+		//m_ProjectorDepthMap.attach_rbo(GL_DEPTH_ATTACHMENT, rboHandle, true);
 
 		m_ProjectorDepthMap.unbind();
-		glBindRenderbuffer(GL_RENDERBUFFER, 0);
+		//glBindRenderbuffer(GL_RENDERBUFFER, 0);
 
 		m_DepthTexture = textureHandle;
 	}
@@ -443,7 +451,7 @@ void app_Scene::update() {
 	m_ProjectTransform.pos = m_Projector->transform.pos + m_Projector->transform.right()*0.5f;
 	m_ProjectTransform = m_Projector->transform;
 	m_ProjectTransform.rot.z += glm::radians(90.0f);
-	m_ProjectTransform.pos += m_ProjectTransform.forward() * 0.5f;
+	m_ProjectTransform.pos += m_ProjectTransform.forward() * 2.0f;
 
 	//m_ProjectTransform.rot.z = glm::radians(360.0f * (float)fmod(glfwGetTime(), 8.0f) / 8.0f);
 
@@ -490,6 +498,7 @@ void app_Scene::on_refresh()
 	glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glEnable(GL_DEPTH_TEST);
+    glCullFace(GL_FRONT);
 
 	glm::mat4 matImageView =  m_ProjectTransform.calculateView();
 		//matImageView = glm::rotate(matImageView, glm::radians(360.0f * (float)fmod(glfwGetTime()/8.0f, 8.0f)), glm::vec3(0.0f, 0.0f, 1.0f));
@@ -501,11 +510,14 @@ void app_Scene::on_refresh()
 	currentShader = m_Shaders["depth"];
 	currentShader->use();
 
+	currentShader->set_uniform("depthBias", +1.0f/8.0f);
+
 	for(const auto& p : m_Renderables) {
 		const renderable_t& r = *p.second;
 		matWorld = r.transform.calculateWorld();
 
-		currentShader->set_uniform("uMVP", matImage * matWorld);
+		currentShader->set_uniform("uMV", matImageView * matWorld);
+		currentShader->set_uniform("uProjection", matImageProj);
 		
 		r.mesh->bind();
 		r.mesh->draw();
@@ -515,6 +527,7 @@ void app_Scene::on_refresh()
 	//Render opaque
 	glViewport(0,0, m_WindowWidth, m_WindowHeight); 
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glCullFace(GL_BACK);
 	currentShader = m_Shaders["opaque"];
 	currentShader->use();
 
@@ -564,11 +577,12 @@ void app_Scene::on_refresh()
 
 	glActiveTexture(GL_TEXTURE0);
 	m_Textures["strawberry"]->use();
+	//glBindTexture(GL_TEXTURE_2D, m_DepthTexture);
 	currentShader->set_uniform("ProjectorTex", 0);
 
-	/*glActiveTexture(GL_TEXTURE1);
+	glActiveTexture(GL_TEXTURE1);
 	glBindTexture(GL_TEXTURE_2D, m_DepthTexture);
-	currentShader->set_uniform("uDepthTexture", 1);*/
+	currentShader->set_uniform("ShadowMap", 1);
 
 	for(const auto& p : m_Renderables) {
 		const renderable_t& r = *p.second;
