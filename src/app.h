@@ -40,6 +40,7 @@ class app_Scene : public resizable_window {
 
 		renderable_t* m_Projector;
 		transform_t   m_ProjectTransform;
+		renderable_t* m_Buddha;
 
 		fbo			m_ProjectorDepthMap;
 		GLuint		m_DepthTexture;

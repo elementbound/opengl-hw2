@@ -120,8 +120,7 @@ bool app_Scene::load_resources() {
 		{"whisky-glass",	"data/meshes/whisky-glass.obj"},
 
 		{"ashtray", 		"data/meshes/ashtray.obj"},
-		//{"armchair", 		"data/meshes/armchair.obj"},
-		{"armchair", 		"data/meshes/whisky-glass.obj"},
+		{"armchair", 		"data/meshes/armchair.obj"},
 		{"projector", 		"data/meshes/projector.obj"},
 
 		{"buddha",			"data/meshes/buddha.obj"}
@@ -143,6 +142,9 @@ bool app_Scene::load_resources() {
 		{"projector-diffuse", 	"data/textures/projector-diffuse.png"}, 
 		{"projector-ao", 		"data/textures/projector-ao.png"}, 
 		{"projector-specular", 	"data/textures/projector-specular.png"},
+
+		{"white", 				"data/textures/white.png"},
+		{"buddha-ao", 			"data/textures/buddha-ao.png"},
 
 		{"strawberry",			"data/textures/strawberry.png"}
 	};
@@ -213,19 +215,9 @@ bool app_Scene::load_resources() {
 			//glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, m_DepthMapSize.x, m_DepthMapSize.y, 0, GL_RED, GL_FLOAT, NULL);
 			glTexStorage2D(GL_TEXTURE_2D, 1, GL_DEPTH_COMPONENT24, m_DepthMapSize.x, m_DepthMapSize.y);
 		std::cout << "done\n";
-
-		/*std::cout << "\tCreating RBO... ";
-			GLuint rboHandle;
-			glGenRenderbuffers(1, &rboHandle);
-			glBindRenderbuffer(GL_RENDERBUFFER, rboHandle);
-			glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, m_DepthMapSize.x, m_DepthMapSize.y);
-		std::cout << "done\n";*/
 		
 		m_ProjectorDepthMap.attach_texture(GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, textureHandle, 0, true);
-		//m_ProjectorDepthMap.attach_rbo(GL_DEPTH_ATTACHMENT, rboHandle, true);
-
 		m_ProjectorDepthMap.unbind();
-		//glBindRenderbuffer(GL_RENDERBUFFER, 0);
 
 		m_DepthTexture = textureHandle;
 	}
@@ -324,13 +316,14 @@ bool app_Scene::init_scene() {
 			item.material.attributes["matDiffuse"] = glm::vec4(1.0f);
 			item.material.attributes["matSpecular"] = glm::vec4(1.0f, 1.0f, 1.0f, 50.0f);
 
-			item.material.diffuseTexture = m_Textures["room-ao"];
-			item.material.specularTexture = m_Textures["room-specular"];
-			item.material.aoTexture = m_Textures["room-ao"];
+			item.material.diffuseTexture = m_Textures["white"];
+			item.material.specularTexture = m_Textures["white"];
+			item.material.aoTexture = m_Textures["buddha-ao"];
 
 			item.mesh = m_Meshes["buddha"];
 
-		m_Renderables.insert({renderPhase_Opaque, new renderable_t(item)});
+		m_Buddha = new renderable_t(item);
+		m_Renderables.insert({renderPhase_Opaque, m_Buddha});
 	}
 
 	//Light
@@ -453,7 +446,7 @@ void app_Scene::update() {
 	m_ProjectTransform.rot.z += glm::radians(90.0f);
 	m_ProjectTransform.pos += m_ProjectTransform.forward() * 2.0f;
 
-	//m_ProjectTransform.rot.z = glm::radians(360.0f * (float)fmod(glfwGetTime(), 8.0f) / 8.0f);
+	//m_Buddha->transform.rot.z = glm::radians(360.0f * (float)fmod(glfwGetTime(), 8.0f) / 8.0f);
 
 	if(m_CameraControl) {
 		float speed = frameTime * m_CameraSpeed * (glfwGetKey(this->handle(), GLFW_KEY_LEFT_SHIFT) ? 2.0f : 1.0f);
