@@ -150,7 +150,7 @@ bool app_Scene::load_resources() {
 	std::vector<std::tuple<const char*, const char*, const char*>> shadersToLoad = {
 		std::make_tuple("textured", "data/shaders/textured.vs", "data/shaders/textured.fs"), 
 		std::make_tuple("opaque",	"data/shaders/opaque.vs", 	"data/shaders/opaque.fs"), 
-		std::make_tuple("project", "data/shaders/project.vs", "data/shaders/project.fs"),  
+		std::make_tuple("project", "data/shaders/projtex.vs", "data/shaders/projtex.fs"),  
 		std::make_tuple("depth", "data/shaders/depth.vs", "data/shaders/depth.fs")
 	};
 
@@ -191,6 +191,8 @@ bool app_Scene::load_resources() {
 
 		std::cout << "success\n";
 	}
+	m_Textures["strawberry"]->parameter(GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+	m_Textures["strawberry"]->parameter(GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
 	std::cout << std::endl;
 
 	std::cout << "Creating FBO... ";
@@ -305,7 +307,7 @@ bool app_Scene::init_scene() {
 	}
 
 	//Buddha
-	/*{
+	{
 		renderable_t item;
 			item.transform.pos   = glm::vec3(0.0f);
 			item.transform.rot   = glm::radians(glm::vec3(0.0f, 0.0f, 0.0f));
@@ -321,7 +323,7 @@ bool app_Scene::init_scene() {
 			item.mesh = m_Meshes["buddha"];
 
 		m_Renderables.insert({renderPhase_Opaque, new renderable_t(item)});
-	}*/
+	}
 
 	//Light
 	{
@@ -493,7 +495,8 @@ void app_Scene::on_refresh()
 		//matImageView = glm::rotate(matImageView, glm::radians(360.0f * (float)fmod(glfwGetTime()/8.0f, 8.0f)), glm::vec3(0.0f, 0.0f, 1.0f));
 		//matImageView = glm::rotate(matImageView, glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 	glm::mat4 matImageProj = glm::perspective(glm::radians(45.0f), 1.0f, 0.2f, 1000.0f);
-	glm::mat4 matImage = matImageProj * matImageView;
+    glm::mat4 matImageST = glm::translate(glm::mat4(), glm::vec3(0.5f)) * glm::scale(glm::mat4(), glm::vec3(0.5f));
+	glm::mat4 matImage = matImageST * matImageProj * matImageView;
 
 	currentShader = m_Shaders["depth"];
 	currentShader->use();
@@ -560,22 +563,20 @@ void app_Scene::on_refresh()
 	currentShader->use();
 
 	glActiveTexture(GL_TEXTURE0);
-	m_Textures["room-ao"]->use();
-	currentShader->set_uniform("uProjectedTexture", 0);
+	m_Textures["strawberry"]->use();
+	currentShader->set_uniform("ProjectorTex", 0);
 
-	glActiveTexture(GL_TEXTURE1);
+	/*glActiveTexture(GL_TEXTURE1);
 	glBindTexture(GL_TEXTURE_2D, m_DepthTexture);
-	currentShader->set_uniform("uDepthTexture", 1);
+	currentShader->set_uniform("uDepthTexture", 1);*/
 
 	for(const auto& p : m_Renderables) {
 		const renderable_t& r = *p.second;
 		matWorld = r.transform.calculateWorld();
 
-		currentShader->set_uniform("uWorldMatrix", matWorld);
-		currentShader->set_uniform("uMVP", m_CameraProjection * matView * matWorld);
-		currentShader->set_uniform("uMatImage", matImage);
-
-
+		currentShader->set_uniform("ModelMatrix", matWorld);
+		currentShader->set_uniform("MVP", m_CameraProjection * matView * matWorld);
+		currentShader->set_uniform("ProjectorMatrix", matImage);
 
 		r.mesh->bind();
 		r.mesh->draw();
