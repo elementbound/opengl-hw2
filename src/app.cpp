@@ -120,8 +120,11 @@ bool app_Scene::load_resources() {
 		{"whisky-glass",	"data/meshes/whisky-glass.obj"},
 
 		{"ashtray", 		"data/meshes/ashtray.obj"},
-		{"armchair", 		"data/meshes/armchair.obj"},
-		{"projector", 		"data/meshes/projector.obj"}
+		//{"armchair", 		"data/meshes/armchair.obj"},
+		{"armchair", 		"data/meshes/whisky-glass.obj"},
+		{"projector", 		"data/meshes/projector.obj"},
+
+		{"buddha",			"data/meshes/buddha.obj"}
 	};
 
 	std::vector<std::pair<const char*, const char*>> texturesToLoad = {
@@ -139,13 +142,16 @@ bool app_Scene::load_resources() {
 
 		{"projector-diffuse", 	"data/textures/projector-diffuse.png"}, 
 		{"projector-ao", 		"data/textures/projector-ao.png"}, 
-		{"projector-specular", 	"data/textures/projector-specular.png"}
+		{"projector-specular", 	"data/textures/projector-specular.png"},
+
+		{"strawberry",			"data/textures/strawberry.png"}
 	};
 
 	std::vector<std::tuple<const char*, const char*, const char*>> shadersToLoad = {
 		std::make_tuple("textured", "data/shaders/textured.vs", "data/shaders/textured.fs"), 
 		std::make_tuple("opaque",	"data/shaders/opaque.vs", 	"data/shaders/opaque.fs"), 
-		std::make_tuple("project", "data/shaders/project.vs", "data/shaders/project.fs")
+		std::make_tuple("project", "data/shaders/project.vs", "data/shaders/project.fs"),  
+		std::make_tuple("depth", "data/shaders/depth.vs", "data/shaders/depth.fs")
 	};
 
 	std::cout << "Loading shaders... \n";
@@ -187,6 +193,34 @@ bool app_Scene::load_resources() {
 	}
 	std::cout << std::endl;
 
+	std::cout << "Creating FBO... ";
+	{
+		std::cout << "\tCreating texture... ";
+			GLuint textureHandle;
+			glGenTextures(1, &textureHandle);
+			glBindTexture(GL_TEXTURE_2D, textureHandle);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, m_DepthMapSize.x, m_DepthMapSize.y, 0, GL_RED, GL_FLOAT, NULL);
+		std::cout << "done\n";
+
+		std::cout << "\tCreating RBO... ";
+			GLuint rboHandle;
+			glGenRenderbuffers(1, &rboHandle);
+			glBindRenderbuffer(GL_RENDERBUFFER, rboHandle);
+			glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, m_DepthMapSize.x, m_DepthMapSize.y);
+		std::cout << "done\n";
+		
+		m_ProjectorDepthMap.attach_texture(GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textureHandle, 0, true);
+		m_ProjectorDepthMap.attach_rbo(GL_DEPTH_ATTACHMENT, rboHandle, true);
+
+		m_ProjectorDepthMap.unbind();
+		glBindRenderbuffer(GL_RENDERBUFFER, 0);
+
+		m_DepthTexture = textureHandle;
+	}
+	std::cout << "Done";
+
 	return true;
 }
 
@@ -209,7 +243,7 @@ bool app_Scene::init_scene() {
 
 			item.mesh = m_Meshes["room"];
 
-		m_Renderables.insert({renderPhase_Opaque, item});
+		m_Renderables.insert({renderPhase_Opaque, new renderable_t(item)});
 	}
 
 	//Armchair
@@ -228,7 +262,7 @@ bool app_Scene::init_scene() {
 
 			item.mesh = m_Meshes["armchair"];
 
-		m_Renderables.insert({renderPhase_Opaque, item});
+		m_Renderables.insert({renderPhase_Opaque, new renderable_t(item)});
 	}
 
 	//Table
@@ -247,7 +281,7 @@ bool app_Scene::init_scene() {
 
 			item.mesh = m_Meshes["table"];
 
-		m_Renderables.insert({renderPhase_Opaque, item});
+		m_Renderables.insert({renderPhase_Opaque, new renderable_t(item)});
 	}
 
 	//Projector
@@ -266,9 +300,28 @@ bool app_Scene::init_scene() {
 
 			item.mesh = m_Meshes["projector"];
 
-		m_Projector = item;
-		m_Renderables.insert({renderPhase_Opaque, item});
+		m_Projector = new renderable_t(item);
+		m_Renderables.insert({renderPhase_Opaque, m_Projector});
 	}
+
+	//Buddha
+	/*{
+		renderable_t item;
+			item.transform.pos   = glm::vec3(0.0f);
+			item.transform.rot   = glm::radians(glm::vec3(0.0f, 0.0f, 0.0f));
+			item.transform.scale = glm::vec3(1.0f);
+
+			item.material.attributes["matDiffuse"] = glm::vec4(1.0f);
+			item.material.attributes["matSpecular"] = glm::vec4(1.0f, 1.0f, 1.0f, 50.0f);
+
+			item.material.diffuseTexture = m_Textures["room-ao"];
+			item.material.specularTexture = m_Textures["room-specular"];
+			item.material.aoTexture = m_Textures["room-ao"];
+
+			item.mesh = m_Meshes["buddha"];
+
+		m_Renderables.insert({renderPhase_Opaque, new renderable_t(item)});
+	}*/
 
 	//Light
 	{
@@ -385,6 +438,13 @@ void app_Scene::update() {
 	double frameTime = glfwGetTime() - lastCheck;
 	lastCheck += frameTime;
 
+	m_ProjectTransform.pos = m_Projector->transform.pos + m_Projector->transform.right()*0.5f;
+	m_ProjectTransform = m_Projector->transform;
+	m_ProjectTransform.rot.z += glm::radians(90.0f);
+	m_ProjectTransform.pos += m_ProjectTransform.forward() * 0.5f;
+
+	//m_ProjectTransform.rot.z = glm::radians(360.0f * (float)fmod(glfwGetTime(), 8.0f) / 8.0f);
+
 	if(m_CameraControl) {
 		float speed = frameTime * m_CameraSpeed * (glfwGetKey(this->handle(), GLFW_KEY_LEFT_SHIFT) ? 2.0f : 1.0f);
 
@@ -413,16 +473,49 @@ void app_Scene::on_refresh()
 {
 	update();
 
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glDepthFunc(GL_LESS);
 
-	//Render opaque
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	shader_program* currentShader = m_Shaders["opaque"];
+	shader_program* currentShader;
+	glm::mat4 matView;
+	glm::mat4 matWorld;
+
+	//Render depth map
+	m_ProjectorDepthMap.bind();
+	glViewport(0, 0, m_DepthMapSize.x, m_DepthMapSize.y);
+	
+	glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glEnable(GL_DEPTH_TEST);
+
+	glm::mat4 matImageView =  m_ProjectTransform.calculateView();
+		//matImageView = glm::rotate(matImageView, glm::radians(360.0f * (float)fmod(glfwGetTime()/8.0f, 8.0f)), glm::vec3(0.0f, 0.0f, 1.0f));
+		//matImageView = glm::rotate(matImageView, glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+	glm::mat4 matImageProj = glm::perspective(glm::radians(45.0f), 1.0f, 0.2f, 1000.0f);
+	glm::mat4 matImage = matImageProj * matImageView;
+
+	currentShader = m_Shaders["depth"];
 	currentShader->use();
 
-	glm::mat4 matView = m_Camera.calculateView();
-	glm::mat4 matWorld;
+	for(const auto& p : m_Renderables) {
+		const renderable_t& r = *p.second;
+		matWorld = r.transform.calculateWorld();
+
+		currentShader->set_uniform("uMVP", matImage * matWorld);
+		
+		r.mesh->bind();
+		r.mesh->draw();
+	}
+	m_ProjectorDepthMap.unbind();
+
+	//Render opaque
+	glViewport(0,0, m_WindowWidth, m_WindowHeight); 
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	currentShader = m_Shaders["opaque"];
+	currentShader->use();
+
+	matView = m_Camera.calculateView();
 
 	currentShader->set_uniform("uLightPos", m_LightPos);
 	currentShader->set_uniform("uLightColor", m_LightColor);
@@ -438,7 +531,7 @@ void app_Scene::on_refresh()
 		if(p.first != renderPhase_Opaque)
 			continue;
 
-		const renderable_t& r = p.second;
+		const renderable_t& r = *p.second;
 		matWorld = r.transform.calculateWorld();
 
 		currentShader->set_uniform("uWorldMatrix", matWorld);
@@ -457,27 +550,32 @@ void app_Scene::on_refresh()
 		r.mesh->bind();
 		r.mesh->draw();
 	}
+	glActiveTexture(GL_TEXTURE0);
 
 	//Render projected
-	glm::mat4 matImageView =  m_Projector.transform.calculateView();
-		matImageView = glm::rotate(matImageView, glm::radians(360.0f * (float)fmod(glfwGetTime()/8.0f, 8.0f)), glm::vec3(0.0f, 0.0f, 1.0f));
-	glm::mat4 matImageProj = glm::perspective(glm::radians(90.0f), 16.0f/9.0f, 0.2f, 1000.0f);
-	glm::mat4 matImage = matImageProj * matImageView;
-
 	glBlendFunc(GL_ONE, GL_ONE); //Add colors
-	//glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
-	//glClear(GL_DEPTH_BUFFER_BIT);
 	glDepthFunc(GL_EQUAL);
 
 	currentShader = m_Shaders["project"];
 	currentShader->use();
+
+	glActiveTexture(GL_TEXTURE0);
+	m_Textures["room-ao"]->use();
+	currentShader->set_uniform("uProjectedTexture", 0);
+
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, m_DepthTexture);
+	currentShader->set_uniform("uDepthTexture", 1);
+
 	for(const auto& p : m_Renderables) {
-		const renderable_t& r = p.second;
+		const renderable_t& r = *p.second;
 		matWorld = r.transform.calculateWorld();
 
 		currentShader->set_uniform("uWorldMatrix", matWorld);
 		currentShader->set_uniform("uMVP", m_CameraProjection * matView * matWorld);
 		currentShader->set_uniform("uMatImage", matImage);
+
+
 
 		r.mesh->bind();
 		r.mesh->draw();
